@@ -1,4 +1,4 @@
-setwd("C:/Users/test/Desktop/dados/cses/csesharmonized")
+setwd("C:/Users/test/Desktop/dados/cses/csesimd")
 load("cses_imd.rdata")
 
 # dataset with France data
@@ -62,6 +62,7 @@ names(csesfr)[names(csesfr) == "res_area"] <- "rural"
 # adding the variable labor structure, of another database of the same survey
 
 # extracting data for France in the CSES fourth wave
+setwd("C:/Users/test/Desktop/dados/cses/cses4")
 load("cses4.rdata")
 
 # extracting data relative to France
@@ -89,6 +90,36 @@ csesfr$unemp <- ifelse(csesfr$employ_st == 5, 1, 0)
 # recoding levels of the variable "employ_st". The values added from the dataset
 # CSES4 was with different values to the variables smaller than 5.
 csesfr$employ_st[csesfr$employ_st < 5] <- 1
+
+
+# extracting a variable of the harmonized dataset cses first to third wave
+fr$iA2011_m <- as.numeric(fr$iA2011_m)
+fr$iA2011_m[fr$iA2011_m >= 96] <- NA
+occ <- fr$iA2011_m
+summary(occ)
+table(occ)
+
+# recoding the same variable of the cses fouth wave
+cses4fr$D2011[cses4fr$D2011 %in% 100 : 143] <- 1
+cses4fr$D2011[cses4fr$D2011 %in% 200 : 265] <- 2
+cses4fr$D2011[cses4fr$D2011 %in% 300 : 352] <- 3
+cses4fr$D2011[cses4fr$D2011 %in% 400 : 441] <- 4
+cses4fr$D2011[cses4fr$D2011 %in% 500 : 552] <- 5
+cses4fr$D2011[cses4fr$D2011 %in% 600 : 634] <- 6
+cses4fr$D2011[cses4fr$D2011 %in% 700 : 754] <- 7 
+cses4fr$D2011[cses4fr$D2011 %in% 800 : 835] <- 8
+cses4fr$D2011[cses4fr$D2011 %in% 900 : 962] <- 9
+cses4fr$D2011[cses4fr$D2011 %in% 000 : 031] <- 10
+cses4fr$D2011[cses4fr$D2011 > 962] <- NA
+
+# attaching the variable to a object
+occ2 <- cses4fr$D2011
+
+# making bind and inserting variable in the csesfr dataset
+csesfr$occ_status <- cbind(c(occ, occ2))
+
+# creating the "bluecollar" variable
+csesfr$blue_c <- ifelse(csesfr$occ_status %in% c(7, 8, 9), 1, 0)
 
 # test model
 logit1 <- glm(data = csesfr, vote_fn ~ age + gender + edu + h_income + rural + unemp, family = binomial)
