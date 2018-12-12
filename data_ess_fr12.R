@@ -145,5 +145,5 @@ vars <- c("country", "age", "gender", "men", "education", "unemployed",
 fr12 <- ess6fr[vars]
 
 # saving file
-write.table(fr12, "C:/Users/test/Desktop/dados/ess/ess6fr/data_ess_fr_12", 
+write.table(fr12, "C:/Users/test/Desktop/dados/ess/ess6fr/data_ess_fr12.txt", 
             sep = ';')
