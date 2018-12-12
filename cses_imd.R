@@ -5,6 +5,10 @@ load("cses_imd.rdata")
 csesfr <- cses_imd[cses_imd$IMD1004 %in% c("FRA_2002", "FRA_2007", 
                                                  "FRA_2012"),]
 
+# table of variable of vote in FN
+with(csesharm, table(IMD1008_YEAR, IMD3002_PR_1))
+
+
 # creating a dummy variable to the vote on the Front National. Vote = 1, non-vote = 0
 csesfr$vote_fn <- ifelse(csesfr$IMD3002_PR_1 == "2500007", 1, 0)
 
@@ -44,7 +48,7 @@ csesfr$h_income <- as.numeric(csesfr$h_income)
 csesfr$h_income[csesfr$h_income > 5] <- NA
 
 # as factor
-csesfr$h_income <- as.factor(csesfr$h_income)
+csesfr$h_income <- as.numeric(csesfr$h_income)
 
 # rural or urban
 names(csesfr)[names(csesfr) == "IMD2007"] <- "res_area"
@@ -59,7 +63,53 @@ csesfr$res_area <- ifelse(csesfr$res_area < 3, 1, 0)
 # recoding to "rural"
 names(csesfr)[names(csesfr) == "res_area"] <- "rural"
 
-# adding the variable labor structure, of another database of the same survey
+# recoding party identification
+names(csesfr)[names(csesfr) == "IMD3005_3"] <- "party_id"
+
+# recoding party closeness
+names(csesfr)[names(csesfr) == "IMD3005_4"] <- "party_close"
+str(csesfr$party_close)
+
+# self left-right positionment
+names(csesfr)[names(csesfr) == "left-right"] <- "LR"
+
+# satisfaction with democracy
+names(csesfr)[names(csesfr) == "IMD3010"] <- "satisf_dem"
+str(csesfr$satisf_dem)
+csesfr$satisf_dem[csesfr$satisf_dem >= 7] <- NA
+table(csesfr$satisf_dem)
+
+# who people votes can make a difference - used as proxy to democratic values
+names(csesfr)[names(csesfr) == "IMD3012"] <- "vote_makes_diff"
+str(csesfr$vote_makes_diff)
+table(csesfr$vote_makes_diff)
+hist(csesfr$vote_makes_diff)
+csesfr$vote_makes_diff[csesfr$vote_makes_diff >= 7] <- NA
+
+# state of economy in the last 12 months
+names(csesfr)[names(csesfr) == "IMD3013_1"] <- "state_econ"
+table(csesfr$state_econ)
+csesfr$state_econ[csesfr$state_econ >= 7] <- NA
+csesfr$state_econ[csesfr$state_econ %in% c(1, 3)] <- 0
+csesfr$state_econ[csesfr$state_econ == 5] <- 1
+
+
+# state of economy better
+names(csesfr)[names(csesfr) == "IMD3013_2"] <- "econ_better"
+
+# state of economy worse
+names(csesfr)[names(csesfr) == "IMD3013_3"] <- "econ_worse"
+table(csesfr$econ_worse)
+
+# expert judgement of party position
+# FN position left-right
+names(csesfr)[names(csesfr) == "IMD5012_C"] <- "FN_lr"
+table(csesfr$FN_lr)
+
+hist(csesfr$FN_lr)
+
+
+##### adding the variable labor structure, of another database of the same survey #####
 
 # extracting data for France in the CSES fourth wave
 setwd("C:/Users/test/Desktop/dados/cses/cses4")
@@ -69,6 +119,7 @@ load("cses4.rdata")
 cses4fr <- cses4[cses4$D1006_NAM %in% "France",]
 
 # reading the harmonized dataset CSES first to third wave
+setwd("C:/Users/test/Desktop/dados/cses/csesharmonized")
 if(require(readstata13) == F) install.packages("readstata13"); require(readstata13)
 csesharm <- read.dta13("CSES1-3_harmonized_only.dta")
 
@@ -84,44 +135,76 @@ emp_sts4 <- as.numeric(emp_sts4)
 # adding the new variable to the harmonized dataset of France
 csesfr$employ_st <- cbind(c(emp_sts, emp_sts4))
 
-# creating the variable "unemployed" based on the value 5 of the variable "employ_st"
+##### creating the variable "unemployed" based on the value 5 of the variable "employ_st" #####
 csesfr$unemp <- ifelse(csesfr$employ_st == 5, 1, 0)
 
 # recoding levels of the variable "employ_st". The values added from the dataset
 # CSES4 was with different values to the variables smaller than 5.
 csesfr$employ_st[csesfr$employ_st < 5] <- 1
 
+##### extracting the variable "socioeconomic status" of the harmonized dataset cses 
+# first to third wave #####
+fr$iB2012_m <- as.numeric(fr$iB2012_m)
+ss <- fr$iB2012_m
+summary(ss)
+table(ss)
 
-# extracting a variable of the harmonized dataset cses first to third wave
-fr$iA2011_m <- as.numeric(fr$iA2011_m)
-fr$iA2011_m[fr$iA2011_m >= 96] <- NA
-occ <- fr$iA2011_m
-summary(occ)
-table(occ)
-
-# recoding the same variable of the cses fouth wave
-cses4fr$D2011[cses4fr$D2011 %in% 100 : 143] <- 1
-cses4fr$D2011[cses4fr$D2011 %in% 200 : 265] <- 2
-cses4fr$D2011[cses4fr$D2011 %in% 300 : 352] <- 3
-cses4fr$D2011[cses4fr$D2011 %in% 400 : 441] <- 4
-cses4fr$D2011[cses4fr$D2011 %in% 500 : 552] <- 5
-cses4fr$D2011[cses4fr$D2011 %in% 600 : 634] <- 6
-cses4fr$D2011[cses4fr$D2011 %in% 700 : 754] <- 7 
-cses4fr$D2011[cses4fr$D2011 %in% 800 : 835] <- 8
-cses4fr$D2011[cses4fr$D2011 %in% 900 : 962] <- 9
-cses4fr$D2011[cses4fr$D2011 %in% 000 : 031] <- 10
-cses4fr$D2011[cses4fr$D2011 > 962] <- NA
-
-# attaching the variable to a object
-occ2 <- cses4fr$D2011
+# extracting the same variable of the cses fourth wave france data
+cses4fr$D2012 <- as.numeric(cses4fr$D2012)
+ss2 <- cses4fr$D2012
+table(ss2)
 
 # making bind and inserting variable in the csesfr dataset
-csesfr$occ_status <- cbind(c(occ, occ2))
+csesfr$socioec_status <- cbind(c(ss, ss2))
+table(csesfr$socioec_status)
+csesfr$socioec_status[csesfr$socioec_status >= 8] <- NA
 
 # creating the "bluecollar" variable
-csesfr$blue_c <- ifelse(csesfr$occ_status %in% c(7, 8, 9), 1, 0)
+csesfr$bluecol <- ifelse(csesfr$socioec_status %in% c(2, 3), 1, 0)
+table(csesfr$bluecol)
 
-# test model
-logit1 <- glm(data = csesfr, vote_fn ~ age + gender + edu + h_income + rural + unemp, family = binomial)
+# creating the variable "self employed"
+csesfr$selfemp <- ifelse(csesfr$socioec_status == 4, 1, 0)
+table(csesfr$selfemp)
+
+# extracting data of the 2012's elections
+fr2012 <- csesfr[csesfr$IMD1004 %in% "FRA_2012",]
+
+##### test model #####
+logit1 <- glm(data = fr2012, vote_fn ~ age + gender + h_income + rural + 
+                unemp + bluecol + satisf_dem + state_econ + LR + 
+                vote_makes_diff + gender*rural, family = binomial)
 summary(logit1)
 
+# saving coefficients
+beta <- logit1$coefficients
+
+# saving confidence intervals
+intervals <- confint(logit1)
+
+# converting from log odds to predicted probabilities
+beta <- exp(beta) / (1 + exp(beta))
+
+# confidence intervals  
+intervals <- exp(intervals) / (1 + exp(intervals))
+
+## calculating standard deviation from the confidence intervals mean
+std <- (intervals[,2] - beta) / 1.96
+
+## plotting model
+if(require(arm) == F) install.packages("arm"); require(arm)
+
+coefplot(beta,
+         std,
+         varnames = c('Intercept', "age", "gender", "h_income", "rural", 
+                    "unemp", "bluecol", "Satisf_dem", "State Econ", "Left-right", 
+                    "Vote makes diff", "Male and rural"),
+         main = 'Logit model 1. 
+         Dependent variable : Probability of vote to FN',
+         mar = c(1, 5, 6.5, 2),
+         cex.var = 1.0,
+         cex.pts = 1.5)
+abline(v = 0.5)
+
+table(fr3$C3023_PR_1)
+plot(fitted(logit1), residuals(logit1))
