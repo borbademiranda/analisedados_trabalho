@@ -11,6 +11,10 @@ ess6fr$country <- ess6fr$cntry
 ess6fr$country[ess6fr$country == "FR"] <- "France"
 table(ess6fr$country)
 
+# inserting variable "election year"
+ess6fr$election_year <- rep(2012)
+table(ess6fr$election_year)
+
 # creating variable "age"
 ess6fr$age <- ess6fr$agea
 summary(ess6fr$age)
@@ -137,7 +141,7 @@ ess6fr$trust_pol <- as.numeric(ess6fr$trust_pol)
 table(ess6fr$trust_pol)
 
 # creating "vars" object
-vars <- c("country", "age", "gender", "men", "education", "unemployed", 
+vars <- c("country", "election_year", "age", "gender", "men", "education", "unemployed", 
           "blue_collar", "self_employed", "household", "rural", "gov_perform", 
           "diss_dem", "diss_econ", "democrats", "lrself", "trust_pol", "vote_fn")
 

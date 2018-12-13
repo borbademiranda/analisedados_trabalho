@@ -16,6 +16,12 @@ setwd("C:/Users/test/Desktop/dados/ess/ess6fr")
 # loading dataset
 fr12 <- read.delim("data_ess_fr12.txt", sep = ";")
 
+# excluding self-employed
+vars <- colnames(fr02)[colnames(fr02) != 'self_employed']
+fr02 <- fr02[vars]
+fr07 <- fr07[vars]
+fr12 <- fr12[vars]
+
 # binding datasets relative to the three elections (2002, 2007, 2012)
 fr02_12 <- rbind(fr02, fr07)
 fr02_12 <- rbind(fr02_12, fr12)
