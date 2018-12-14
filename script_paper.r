@@ -1,9 +1,14 @@
 setwd("C:/Users/test/Documents/GitHub/analisedados_trabalho")
 
 # loading packages
-library(tidyverse)
-library(ggplot2)
-library(devtools)
+if(require(tidyverse) == F) install.packages("tidyverse"); require(tidyverse)
+if(require(ggplot2) == F) install.packages("ggplot2"); require(ggplot2)
+if(require(devtools) == F) install.packages("devtools"); require(devtools)
+if(require(arm) == F) install.packages("arm"); require(arm)
+if(require(dotwhisker) == F) install.packages("dotwhisker"); require(dotwhisker)
+if(require(broom) == F) install.packages("broom"); require(broom)
+if(require(dplyr) == F) install.packages("dplyr"); require(dplyr)
+if(require(stargazer) == F) install.packages("stargazer"); require(stargazer)
 
 # loading dataset
 fr0212full <- read.delim("ess_fr_2002-2012.txt", sep = ";")
@@ -16,7 +21,7 @@ p <- ggplot(fr0212, aes(x = lrself)) +
   geom_histogram(color = "black") +
   geom_density(alpha = .2) +
   facet_grid(election ~ .) +
-  labs(title = "Left-Right frequency of the individuals by year of election",
+  labs(title = "Fig1: Left-Right frequency of the individuals by year of election",
        x = "Left-Right scale", y = "Count")
 p
 
@@ -34,11 +39,32 @@ ggplot(data = fr0212, aes(x = election, y = diss_econ)) +
   labs(title = "Satisfaction with economy by year of election",
        y = "satisfaction with economy", x = "election year")
 
-# line plot of satisfaction with government
+# box plot of satisfaction with government
 ggplot(data = fr0212, aes(x = election, y = gov_perform)) +
   geom_boxplot() +
   labs(title = "Satisfaction with actual government by election year",
        y = "satisfaction with government", x = "election year")
+
+# boxplot satisfaction with democracy
+fr0212$diss_dem <- as.numeric(fr0212$diss_dem)
+table(fr0212$diss_dem)
+
+ggplot(data = fr0212, aes(x = election, y = diss_dem)) +
+  geom_boxplot() +
+  labs(title = "Satisfaction with democracy by election year",
+       y = "satisfaction with democracy", x = "election year")
+
+# boxplot for trust in politicians
+ggplot(data = fr0212, aes(x = election, y = trust_pol)) +
+  geom_boxplot() +
+  labs(title = "Trust in politicians by year of elections in France",
+       y = "trust in politiciants", x = "election")
+
+# plot for trust in politicians
+plot(tapply(fr0212$trust_pol, fr0212$election_year, mean) ~ c(2002,2007,2012),
+     type = 'l', ylab = "Trust in politicians (mean)", xlab = "Year",
+     lwd = 2, cex.lab = 1.5, cex.axis = 1.3, family = 'serif',
+     main = "Trust in politicians and politics - 2002-2012")
 
 # logit model 1: demographic variables
 logit1 <- glm(data = fr0212, vote_fn ~ age + men + education + household + 
@@ -49,10 +75,18 @@ summary(logit1)
 LLK_Full <- logLik(logit1)[1]
 LLK_Int <- logLik(glm(vote_fn ~ 1, data = fr0212, family = binomial))[1]
 
-1 - (LLK_Full / LLK_Int)
+mf <- 1 - (LLK_Full / LLK_Int)
 
 # Mc Fadden's Adjusted
-1 - ((LLK_Full - 5) / LLK_Int)
+mfadjusted <- 1 - ((LLK_Full - 5) / LLK_Int)
+
+mfgen <- c(mf, mfadjusted)
+
+# table with mc fadden's (remember to open the file in the working directory)
+stargazer(mf, title = "Mc Fadden's Model 1", type = "html",
+          out = "mcfaddenslogit1.htm")
+stargazer(mfadjusted, title = "Mc Fadden's adjusted Model 1", type = "html",
+          out = "mfadjustedlogit1.html")
 
 # saving coefficients
 beta1 <- logit1$coefficients
@@ -67,9 +101,7 @@ int1 <- exp(int1) / (1 + exp(int1))
 # calculating standard deviation from the confidence intervals 
 std1 <- (int1[,2] - beta1) / 1.96
 
-## ploting model
-library(arm)
-
+## ploting model in predicted probabilities
 coefplot(beta1,
          std1,
          varnames = c("Intercept", "Age", "Men", "Education", "Income",
@@ -81,11 +113,7 @@ coefplot(beta1,
          var.las = 2)
 abline(v = 0.5)
 
-# dot-and-whisker plot of logit1 model
-library(dotwhisker)
-library(broom)
-library(dplyr)
-
+# dot-and-whisker plot of logit1 model, with coefficient's log odds
 dwplot(logit1,
        vline = geom_vline(xintercept = 0, colour = "grey60", linetype = 2))
 
@@ -98,10 +126,20 @@ summary(logit2)
 LLK_Full2 <- logLik(logit2)[1]
 LLK_Int2 <- logLik(glm(vote_fn ~ 1, data = fr0212, family = binomial))[1]
 
-1 - (LLK_Full2 / LLK_Int2)
+mf2 <- 1 - (LLK_Full2 / LLK_Int2)
 
 # Mc Fadden's Adjusted
-1 - ((LLK_Full2 - 5) / LLK_Int2)
+mf2adjusted <- 1 - ((LLK_Full2 - 5) / LLK_Int2)
+
+# table with Mc Fadden's logit 2 (remember to open the file)
+stargazer(mf2, title = "Mc Fadden's Model 2", type = "html",
+          out = "mflogit2.htm")
+stargazer(mf2adjusted, title = "Adjusted Mc Fadden's  Model 2", 
+          out = "mfadjustedmodel2.htm")
+
+# dot and whisker of the coefficients
+dwplot(logit2, 
+       vline = geom_vline(xintercept = 0, colour = "grey60", linetype = 2))
 
 # saving coefficients
 beta2 <- logit2$coefficients
@@ -130,17 +168,27 @@ abline(v = 0.5)
 # logit model 3: political variables
 fr0212$diss_dem <- as.numeric(fr0212$diss_dem)
 logit3 <- glm(data = fr0212, vote_fn ~ lrself + gov_perform + diss_dem + 
-                diss_econ + trust_pol, family = binomial)
+                diss_econ + trust_pol + factor(election), family = binomial)
 summary(logit3)
 
 # Mc Fadden's
 LLK_Full3 <- logLik(logit3)[1]
 LLK_Int3 <- logLik(glm(vote_fn ~ 1, data = fr0212, family = binomial))[1]
 
-1 - (LLK_Full3/ LLK_Int3)
+mf3 <- 1 - (LLK_Full3/ LLK_Int3)
 
 # Mc Fadden's Adjusted
-1 - ((LLK_Full3 - 4) / LLK_Int3)
+mf3adjusted <- 1 - ((LLK_Full3 - 4) / LLK_Int3)
+
+# table with Mc Fadden's values (remember to open the file)
+stargazer(mf3, title = "Mc Fadden's  Model 3", 
+          out = "mflogit3.htm")
+stargazer(mf3adjusted, title = "Adjusted Mc Fadden's  Model 3", 
+          out = "mfadjustedmodel3.htm")
+
+# plotting model 3's coefficients
+dwplot(logit3,
+       vline = geom_vline(xintercept = 0, colour = "grey60", linetype = 2))
 
 # saving coefficients
 beta3 <- logit3$coefficients
@@ -155,7 +203,7 @@ int3 <- exp(int3) / (1 + exp(int3))
 # calculating standard deviation from the confidence intervals 
 std3 <- (int3[,2] - beta3) / 1.96
 
-# ploting logit 3
+# ploting logit 3 in predicted probabilities
 coefplot(beta3,
          std3,
          varnames = c("Intercept", "LRscale", "Satisf gov", "Satisf dem", 
@@ -167,9 +215,10 @@ coefplot(beta3,
          var.las = 2)
 abline(v = 0.5)
 
+# model 4 with all the variables
 logitgen <- glm(data = fr0212, vote_fn ~ age + men + education + household + 
                   unemployed + blue_collar + rural + lrself + 
-                  gov_perform + diss_dem + diss_econ + trust_pol + election,
+                  gov_perform + diss_dem + diss_econ + trust_pol + factor(election),
                 family = binomial)
 summary(logitgen)
 
@@ -200,44 +249,33 @@ intgen <- exp(intgen) / (1 + exp(intgen))
 stdgen <- (intgen[,2] - betagen) / 1.96
 
 # plotting model 4
-coefplot(betagen[2:14],
-         stdgen[2: 14],
-         varnames = c("Age", "Men", "Educ", "Income", "Unemployed",
-                      "Blue Col", "Rural inhab", "LR Self", "Satisf gov",
-                      "Satisf democracy", "Satisf econ", "Trust Politicians", 
-                      "Election 2007", "Election 2012"),
-         main = "Logit model 4: probability of voting in the FN",
+coefplot(betagen[2:15],
+         stdgen[2: 15],
+         varnames = c("Age", "Men", "Educ", "Income", "Unemp",
+                      "Blue Col", "Rural", "LR Self", "Satisf gov",
+                      "Satisf dem", "Satisf econ", "Trust Pol", 
+                      "2007", "2012"),
+         main = "Predicted probability of voting in the FN (data from model 4)",
          cex.var = 0.8,
          cex.pts = 1.5,
          mar = c(1, 0, 5.1, 2),
          var.las = 2)
 abline(v = 0.5)
 
-plot(logitgen)
-hist(residuals(logitgen))
+# dot and whisker plot comparing the coefficients for all the four models
+dwplot(list(logit1, logit2, logit3, logitgen),
+       vline = geom_vline(xintercept = 0, colour = "grey60", linetype = 2))
 
-# simulating data
-simdata <- data.frame(age = mean(fr0212$age), 
-                      men = 0,
-                      education = mean(fr0212$education),
-                      household = mean(fr0212$household),
-                      unemployed = 0,
-                      blue_collar = 0,
-                      rural = 0,
-                      lrself = mean(fr0212$lrself),
-                      gov_perform = mean(fr0212$gov_perform),
-                      diss_dem = mean(fr0212$diss_dem),
-                      diss_econ = mean(fr0212$diss_econ),
-                      trust_pol = 1 : 11,
-                      election = factor(2012))
+# table with coefficients of model 4 (remember to open the file)
+stargazer(logit1, logit2, logit3, logitgen, title = "Results",
+          dep.var.labels = "Vote in FN",
+          covariate.labels = c("Age", "Men", "Educ", "Income", "Unemployed",
+                               "Blue Col", "Rural inhab", "LR Self", 
+                               "Satisf gov","Satisf democracy", "Satisf econ", 
+                               "Trust Politicians", "Election 2007", 
+                               "Election 2012"),
+          type = "html", align = TRUE, out = "modelstest.htm")
 
-prob_trust <- predict.glm(logitgen, simdata, type = 'response')
-
-ggplot(data = simdata, aes(x = simdata$trust_pol, y = prob_trust)) +
-  geom_smooth(se = T) +
-  geom_point()
-
-plot(prob_trust ~ simdata$trust_pol)
-
+# saving dataset
 write.csv(fr0212, "C:/Users/test/Documents/GitHub/analisedados_trabalho/fr0212.csv", 
           sep = ";")
