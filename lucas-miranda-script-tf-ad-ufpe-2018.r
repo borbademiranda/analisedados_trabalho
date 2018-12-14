@@ -11,7 +11,7 @@ if(require(dplyr) == F) install.packages("dplyr"); require(dplyr)
 if(require(stargazer) == F) install.packages("stargazer"); require(stargazer)
 
 # loading dataset
-fr0212full <- read.delim("ess_fr_2002-2012.txt", sep = ";")
+fr0212full <- read.delim("lucas-miranda-bd-tf-ad-ufpe-2018.txt", sep = ";")
 fr0212 <- na.omit(fr0212full)
 
 # histogram of the variable for self positionment on the left right scale by year
@@ -157,7 +157,8 @@ std2 <- (int2[,2] - beta2) / 1.96
 # ploting model
 coefplot(beta2,
          std2,
-         varnames = c("Intercept", "Unemployed", "Blue-collar", "Rural inh"),
+         varnames = c("Intercept", "Unemployed", "Blue-collar", "Rural inh", 
+                      "election 2007", "election 2012"),
          main = "Logit model 2: probability of voting in the FN",
          cex.var = 0.8,
          cex.pts = 1.5,
@@ -207,7 +208,8 @@ std3 <- (int3[,2] - beta3) / 1.96
 coefplot(beta3,
          std3,
          varnames = c("Intercept", "LRscale", "Satisf gov", "Satisf dem", 
-                      "Satisf econ", "Trust polity"),
+                      "Satisf econ", "Trust polity", "election 2007", 
+                      "election 2012"),
          main = "Logit model 3: probability of voting in the FN",
          cex.var = 0.8,
          cex.pts = 1.5,
@@ -275,7 +277,3 @@ stargazer(logit1, logit2, logit3, logitgen, title = "Results",
                                "Trust Politicians", "Election 2007", 
                                "Election 2012"),
           type = "html", align = TRUE, out = "modelstest.htm")
-
-# saving dataset
-write.csv(fr0212, "C:/Users/test/Documents/GitHub/analisedados_trabalho/fr0212.csv", 
-          sep = ";")
